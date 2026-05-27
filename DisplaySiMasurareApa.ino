@@ -11,14 +11,7 @@ HX711 scale;
 // -------- Controls
 const int TARE_BUTTON_PIN = 2; // Button to GND, uses INPUT_PULLUP
 const int CAL_BUTTON_PIN = 3;  // Button to GND, uses INPUT_PULLUP
-const int VALVE_PIN = 8;     // Relay/MOSFET input for solenoid valve
-const int LATCH_PIN = 9;     // Latch/contact output: HIGH=set, LOW=reset
 const int SERIAL_RX_LED_PIN = LED_BUILTIN;
-// Use a normally-closed solenoid and relay NO contact so loss of Arduino power closes water flow.
-const uint8_t VALVE_OPEN_LEVEL = HIGH;
-const uint8_t VALVE_CLOSED_LEVEL = LOW;
-const uint8_t LATCH_SET_LEVEL = HIGH;
-const uint8_t LATCH_RESET_LEVEL = LOW;
 
 // -------- Scale calibration
 long offset = 0;
@@ -57,7 +50,7 @@ long waterMl = 0;
 long minMl = 0;
 long maxMl = 0;
 bool runEnabled = true;
-bool valveOpen = false;
+bool valveOpen = false; // Pi-owned in Phase 1; kept in telemetry for protocol compatibility.
 bool piConnected = false;
 bool settingsLoaded = false;
 
@@ -88,7 +81,6 @@ const __FlashStringHelper* stateName(SystemState s) {
 void printTelemetry(bool force);
 void printEvent(const __FlashStringHelper* name);
 void enterState(SystemState nextState);
-void setValve(bool open);
 void printCalibrationReading(const __FlashStringHelper* label);
 
 bool serialWatchdogOk() {
@@ -128,7 +120,6 @@ void resetSettings() {
   settingsLoaded = false;
   minMl = 0;
   maxMl = 0;
-  setValve(false);
   printEvent(F("SETTINGS_RESET"));
 }
 
@@ -186,20 +177,7 @@ void setRunEnabled(bool enabled, const __FlashStringHelper* reason) {
   Serial.println(runEnabled ? 1 : 0);
 }
 
-void setValve(bool open) {
-  if (open && REQUIRE_PI_HEARTBEAT_TO_OPEN_VALVE && !serialWatchdogOk()) open = false;
-  if (valveOpen == open) return;
-
-  valveOpen = open;
-  digitalWrite(VALVE_PIN, open ? VALVE_OPEN_LEVEL : VALVE_CLOSED_LEVEL);
-  digitalWrite(LATCH_PIN, open ? LATCH_SET_LEVEL : LATCH_RESET_LEVEL);
-
-  printEvent(open ? F("VALVE_OPEN") : F("VALVE_CLOSED"));
-}
-
 void tareScale() {
-  setValve(false);
-
   printEvent(F("TARE_START"));
 
   delay(500);
@@ -294,7 +272,6 @@ void enterState(SystemState nextState) {
 
   switch (state) {
     case CAL_TARE:
-      setValve(false);
       printEvent(F("NEED_TARE"));
       break;
     case CAL_MIN:
@@ -304,7 +281,6 @@ void enterState(SystemState nextState) {
       printEvent(F("NEED_MAX"));
       break;
     case NORMAL:
-      setValve(false);
       printEvent(F("CAL_DONE"));
       break;
   }
@@ -342,13 +318,6 @@ void handleSerialCommand(char* command) {
   } else if (strcmp(command, "SET_MAX") == 0) {
     printEvent(F("SERIAL_SET_MAX"));
     setCurrentMax();
-  } else if (strcmp(command, "STOP") == 0 || strcmp(command, "S") == 0) {
-    printEvent(F("SERIAL_STOP"));
-    setRunEnabled(false, F("SERIAL"));
-    setValve(false);
-  } else if (strcmp(command, "RUN") == 0 || strcmp(command, "R") == 0) {
-    printEvent(F("SERIAL_RUN"));
-    setRunEnabled(true, F("SERIAL"));
   } else {
     printEvent(F("UNKNOWN_COMMAND"));
   }
@@ -375,7 +344,6 @@ void handleSerial() {
 void updateSerialWatchdog() {
   if (piConnected && !serialWatchdogOk()) {
     piConnected = false;
-    setValve(false);
     printEvent(F("PI_TIMEOUT"));
   }
 }
@@ -416,16 +384,8 @@ void handleCalibrationMax(bool buttonPressed) {
 }
 
 void updateValveControl() {
-  if (!runEnabled || (REQUIRE_PI_HEARTBEAT_TO_OPEN_VALVE && !serialWatchdogOk())) {
-    setValve(false);
-    return;
-  }
-
-  if (!valveOpen && waterMl <= minMl) {
-    setValve(true);
-  } else if (valveOpen && waterMl >= maxMl) {
-    setValve(false);
-  }
+  // Phase 1: the Raspberry Pi owns solenoid control through the RELAYplate.
+  valveOpen = false;
 }
 
 void printTelemetry(bool force) {
@@ -471,11 +431,7 @@ void setup() {
 
   pinMode(TARE_BUTTON_PIN, INPUT_PULLUP);
   pinMode(CAL_BUTTON_PIN, INPUT_PULLUP);
-  pinMode(VALVE_PIN, OUTPUT);
-  pinMode(LATCH_PIN, OUTPUT);
   pinMode(SERIAL_RX_LED_PIN, OUTPUT);
-  digitalWrite(VALVE_PIN, VALVE_CLOSED_LEVEL);
-  digitalWrite(LATCH_PIN, LATCH_RESET_LEVEL);
   digitalWrite(SERIAL_RX_LED_PIN, LOW);
 
   scale.begin(HX_DT, HX_SCK);
@@ -488,7 +444,7 @@ void setup() {
   }
 
   printEvent(F("BOOT"));
-  Serial.println(F("INFO,protocol=1,commands=HB|RUN|STOP|TARE|SET_MIN|SET_MAX"));
+  Serial.println(F("INFO,protocol=1,commands=HB|TARE|SET_MIN|SET_MAX"));
 
   if (loadSettings() && digitalRead(CAL_BUTTON_PIN) == HIGH) {
     printEvent(F("SETTINGS_LOADED"));
