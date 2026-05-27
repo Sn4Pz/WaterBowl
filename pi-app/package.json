@@ -1,0 +1,9 @@
+{
+  "name": "water-bowl-pwa",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local PWA placeholder for Water Bowl serial communication.",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#050712">
+    <title>Water Bowl Command Center</title>
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero-card">
+        <div class="hero-copy">
+          <p class="eyebrow">Water Bowl OS</p>
+          <h1>Live hydration control</h1>
+          <p class="subtle">Intelligent pet water intake monitoring, built for healthier routines and effortless care.</p>
+        </div>
+        <div class="connection-pill" id="connectionStatus">
+          <span class="pulse"></span>
+          Connecting
+        </div>
+      </section>
+
+      <section class="dashboard-grid">
+        <article class="bowl-card glass-card">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">Bowl Level</p>
+              <h2><span id="waterMl">--</span> ml</h2>
+            </div>
+            <div class="state-chip" id="stateChip">Waiting</div>
+          </div>
+
+          <div class="bowl-wrap" aria-label="Animated water bowl level">
+            <div class="bowl">
+              <div class="water" id="waterFill">
+                <div class="wave wave-one"></div>
+                <div class="wave wave-two"></div>
+              </div>
+              <div class="bowl-gloss"></div>
+            </div>
+            <div class="level-scale">
+              <span><span class="scale-label">Max</span><strong><span id="maxMl">--</span> ml</strong></span>
+              <span><span class="scale-label">Min</span><strong><span id="minMl">--</span> ml</strong></span>
+            </div>
+          </div>
+
+          <div class="metric-row">
+            <div>
+              <span>Fill</span>
+              <strong id="fillPercent">--%</strong>
+            </div>
+            <div>
+              <span>Volume</span>
+              <strong class="metric-value"><span id="volumeMl">--</span>&nbsp;<span class="unit">ml</span></strong>
+            </div>
+            <div>
+              <span>Updated</span>
+              <strong id="lastUpdate">Never</strong>
+            </div>
+          </div>
+        </article>
+
+        <article class="status-card glass-card">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">System</p>
+              <h2 id="systemState">Waiting for telemetry</h2>
+            </div>
+            <div class="timeline">
+              <p class="eyebrow">Latest Event</p>
+              <strong id="latestEvent">No events yet</strong>
+            </div>
+          </div>
+
+          <div class="status-grid">
+            <div class="status-tile">
+              <span>Valve</span>
+              <strong id="valveStatus">--</strong>
+            </div>
+            <div class="status-tile">
+              <span>Run Mode</span>
+              <strong id="runStatus">--</strong>
+            </div>
+            <div class="status-tile">
+              <span>Pi Link</span>
+              <strong id="piStatus">--</strong>
+            </div>
+            <div class="status-tile">
+              <span>Settings</span>
+              <strong id="settingsStatus">--</strong>
+            </div>
+            <div class="status-tile counter-tile">
+              <span>Consumed 24h</span>
+              <strong class="counter-value"><span id="consumed24h">0</span>&nbsp;<span class="unit">ml</span></strong>
+            </div>
+            <div class="status-tile counter-tile">
+              <span>Consumed 7d</span>
+              <strong class="counter-value"><span id="consumed7d">0</span>&nbsp;<span class="unit">ml</span></strong>
+            </div>
+            <button class="mini-button reset-counters" id="resetCounters">Reset counters</button>
+          </div>
+        </article>
+
+        <article class="controls-card glass-card">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">Controls</p>
+              <h2>Routine control</h2>
+            </div>
+          </div>
+
+          <div class="command-grid">
+            <button class="command primary" data-command="RUN">Start</button>
+            <button class="command danger" data-command="STOP">Stop</button>
+            <button class="command" data-command="TARE">Tare</button>
+            <button class="command" data-command="SET_MIN">Set Min</button>
+            <button class="command" data-command="SET_MAX">Set Max</button>
+          </div>
+
+          <p class="command-feedback" id="commandFeedback">Start allows the routine to open the solenoid. Stop closes it and prevents opening.</p>
+        </article>
+
+        <article class="serial-card glass-card">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">Serial Stream</p>
+              <h2>Raw lines</h2>
+            </div>
+            <button class="mini-button" id="clearLog">Clear</button>
+          </div>
+          <pre id="serialLog" aria-live="polite">WAITING FOR SERIAL DATA</pre>
+        </article>
+      </section>
+    </main>
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
