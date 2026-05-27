@@ -12,7 +12,7 @@ const elements = {
   piStatus: document.querySelector("#piStatus"),
   resetCounters: document.querySelector("#resetCounters"),
   runStatus: document.querySelector("#runStatus"),
-  serialLog: document.querySelector("#serialLog"),
+  telemetryLog: document.querySelector("#telemetryLog"),
   settingsStatus: document.querySelector("#settingsStatus"),
   stateChip: document.querySelector("#stateChip"),
   systemState: document.querySelector("#systemState"),
@@ -22,8 +22,8 @@ const elements = {
   waterMl: document.querySelector("#waterMl"),
 };
 
-const serialLines = [];
-const maxSerialLines = 240;
+const telemetryLines = [];
+const maxTelemetryLines = 240;
 const streamStaleAfterMs = 6000;
 let lastStreamMessageAt = 0;
 let lastStreamErrorAt = 0;
@@ -52,7 +52,7 @@ function formatClock() {
   return new Date().toLocaleTimeString("en-GB", { hour12: false });
 }
 
-function parseSerialLine(line) {
+function parseTelemetryLine(line) {
   const [type, ...parts] = line.split(",");
   const values = { type };
 
@@ -120,10 +120,12 @@ function updateDashboard() {
   elements.fillPercent.textContent = `${clampedFill}%`;
   elements.waterFill.style.height = `${Math.max(8, clampedFill)}%`;
   elements.lastUpdate.textContent = formatClock();
-  const bowlState = telemetry.waterMl !== null && telemetry.minMl !== null && telemetry.waterMl < telemetry.minMl
-    ? "LOW"
-    : telemetry.state || "Waiting";
-  const isLow = bowlState === "LOW";
+  const bowlState = telemetry.state === "BOWL_REMOVED"
+    ? "BOWL REMOVED"
+    : telemetry.waterMl !== null && telemetry.minMl !== null && telemetry.waterMl < telemetry.minMl
+      ? "LOW"
+      : telemetry.state || "Waiting";
+  const isLow = bowlState === "LOW" || bowlState === "BOWL REMOVED";
 
   elements.systemState.textContent = bowlState;
   elements.stateChip.textContent = bowlState;
@@ -141,7 +143,7 @@ function updateDashboard() {
   setTileState(elements.runStatus, running);
 
   const piLinked = telemetry.pi === 1;
-  elements.piStatus.textContent = piLinked ? "Pi heartbeat Linked" : "Unlinked";
+  elements.piStatus.textContent = piLinked ? "Pi scale Linked" : "Unlinked";
   setTileState(elements.piStatus, piLinked);
 
   const settingsLoaded = telemetry.settings === 1;
@@ -171,7 +173,7 @@ function handleStats(values) {
 }
 
 function handleParsedLine(line) {
-  const values = parseSerialLine(line);
+  const values = parseTelemetryLine(line);
 
   if (values.type === "TEL") {
     handleTelemetry(values);
@@ -195,28 +197,21 @@ function handleParsedLine(line) {
     return;
   }
 
-  if (values.type === "ACK") {
-    telemetry.pi = 1;
-    elements.latestEvent.textContent = "Arduino acknowledged heartbeat";
-    updateDashboard();
-    return;
-  }
-
   if (values.type === "CMD") {
     elements.latestEvent.textContent = `Pi sent ${values.command || "command"}`;
   }
 }
 
-function pushSerialLine(line) {
+function pushTelemetryLine(line) {
   const timestamp = formatClock();
-  serialLines.push(`[${timestamp}] ${line}`);
+  telemetryLines.push(`[${timestamp}] ${line}`);
 
-  if (serialLines.length > maxSerialLines) {
-    serialLines.splice(0, serialLines.length - maxSerialLines);
+  if (telemetryLines.length > maxTelemetryLines) {
+    telemetryLines.splice(0, telemetryLines.length - maxTelemetryLines);
   }
 
-  elements.serialLog.textContent = serialLines.join("\n");
-  elements.serialLog.scrollTop = elements.serialLog.scrollHeight;
+  elements.telemetryLog.textContent = telemetryLines.join("\n");
+  elements.telemetryLog.scrollTop = elements.telemetryLog.scrollHeight;
   handleParsedLine(line);
 }
 
@@ -284,7 +279,7 @@ events.addEventListener("open", markStreamOnline);
 events.addEventListener("message", (event) => {
   const message = JSON.parse(event.data);
   markStreamOnline();
-  pushSerialLine(message.line);
+  pushTelemetryLine(message.line);
 });
 
 events.addEventListener("error", () => {
@@ -292,7 +287,7 @@ events.addEventListener("error", () => {
   markStreamReconnecting();
 
   if (shouldLogError) {
-    pushSerialLine("SERIAL STREAM DISCONNECTED");
+    pushTelemetryLine("TELEMETRY STREAM DISCONNECTED");
   }
 });
 
@@ -313,8 +308,8 @@ document.querySelectorAll("[data-command]").forEach((button) => {
 });
 
 elements.clearLog.addEventListener("click", () => {
-  serialLines.length = 0;
-  elements.serialLog.textContent = "LOG CLEARED";
+  telemetryLines.length = 0;
+  elements.telemetryLog.textContent = "LOG CLEARED";
 });
 
 elements.resetCounters.addEventListener("click", resetCounters);

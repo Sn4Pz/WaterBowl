@@ -509,7 +509,7 @@ button {
   font-size: 0.88rem;
 }
 
-.serial-card {
+.telemetry-card {
   grid-column: 1 / -1;
 }
 
@@ -519,7 +519,7 @@ button {
   background: rgba(255, 255, 255, 0.06);
 }
 
-#serialLog {
+#telemetryLog {
   height: 260px;
   margin: 0;
   padding: 16px;

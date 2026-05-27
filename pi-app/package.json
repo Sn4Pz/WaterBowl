@@ -2,7 +2,7 @@
   "name": "water-bowl-pwa",
   "version": "0.1.0",
   "private": true,
-  "description": "Local PWA placeholder for Water Bowl serial communication.",
+  "description": "Local PWA dashboard for Pi-based water bowl monitoring and control.",
   "scripts": {
     "start": "node server.js"
   }

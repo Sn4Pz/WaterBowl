@@ -1,0 +1,17 @@
+[Unit]
+Description=WaterBowl PM2 app
+Documentation=https://pm2.keymetrics.io/
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/WaterBowl
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+Environment=PM2_HOME=/home/pi/.pm2
+ExecStart=/usr/local/bin/pm2-runtime start /home/pi/WaterBowl/ecosystem.config.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

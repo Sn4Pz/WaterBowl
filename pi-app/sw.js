@@ -1,4 +1,4 @@
-const CACHE_NAME = "water-bowl-pwa-v33";
+const CACHE_NAME = "water-bowl-pwa-v36";
 const ASSETS = [
   "./",
   "./index.html",

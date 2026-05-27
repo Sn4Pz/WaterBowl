@@ -1,4 +1,8 @@
 waterbowl.log
 waterbowl.pid
 waterbowl-state.json
+hx711-state.json
 *.tmp
+.venv/
+__pycache__/
+.lgd-*
