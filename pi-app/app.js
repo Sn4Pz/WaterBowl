@@ -127,6 +127,8 @@ function updateDashboard() {
 
   elements.systemState.textContent = bowlState;
   elements.stateChip.textContent = bowlState;
+  elements.systemState.classList.toggle("low", isLow);
+  elements.systemState.classList.toggle("normal", !isLow && bowlState !== "Waiting");
   elements.stateChip.classList.toggle("low", isLow);
   elements.waterFill.classList.toggle("low", isLow);
 

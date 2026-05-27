@@ -104,6 +104,14 @@ h2 {
   font-size: clamp(1.4rem, 3vw, 2.35rem);
 }
 
+#systemState.low {
+  color: var(--amber);
+}
+
+#systemState.normal {
+  color: var(--green);
+}
+
 .subtle {
   max-width: none;
   margin: 16px 0 0;
@@ -284,9 +292,7 @@ h2 {
 }
 
 .level-scale strong {
-  display: inline-flex;
-  gap: 0.25em;
-  justify-content: flex-start;
+  display: block;
   white-space: nowrap;
   color: var(--text);
 }
@@ -594,16 +600,16 @@ button {
   }
 
   .level-scale > span {
-    display: flex;
-    gap: 0.45em;
+    display: grid;
+    gap: 4px;
     padding-left: 0;
   }
 
   .level-scale strong {
-    order: 1;
+    order: 2;
   }
 
   .scale-label {
-    order: 2;
+    order: 1;
   }
 }
