@@ -3,7 +3,8 @@ const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
 
-const HOST = process.env.HOST || "192.168.123.244";
+const HOST = process.env.HOST || "0.0.0.0";
+const PUBLIC_HOST = process.env.PUBLIC_HOST || "192.168.123.244";
 const PORT = Number(process.env.PORT || 8080);
 const ROOT = __dirname;
 const STATE_FILE = path.join(ROOT, "waterbowl-state.json");
@@ -334,6 +335,13 @@ function processSerialLine(line) {
   const values = parseKeyValueLine(line);
 
   if (values.type !== "TEL") {
+    if (
+      values.type === "DBG" ||
+      values.type === "ERR" ||
+      (values.type === "EVT" && (values.name === "BOOT" || values.name === "HX711_NOT_READY"))
+    ) {
+      console.log(`HX711 ${line}`);
+    }
     return line;
   }
 
@@ -438,6 +446,18 @@ function handlePiCommand(command) {
   }
 
   return false;
+}
+
+function pauseRoutineForCalibration(command) {
+  if (command !== "TARE" && command !== "SET_MIN" && command !== "SET_MAX") {
+    return;
+  }
+
+  piRunEnabled = false;
+  lowReadingCount = 0;
+  cancelPendingValveOpen("calibration");
+  setPiValve(false, "calibration command");
+  broadcastSerialLine(`EVT,source=pi,name=ROUTINE_PAUSED_FOR_${command},run=0`);
 }
 
 function readRequestBody(request, callback) {
@@ -559,6 +579,8 @@ const server = http.createServer((request, response) => {
         return;
       }
 
+      pauseRoutineForCalibration(command);
+
       if (!writeScaleCommand(command)) {
         send(response, 503, JSON.stringify({ error: "Scale reader is not ready" }), {
           "Content-Type": "application/json; charset=utf-8",
@@ -617,7 +639,7 @@ const server = http.createServer((request, response) => {
 
 server.listen(PORT, HOST, () => {
   loadConsumptionState();
-  console.log(`Water Bowl PWA running at http://${HOST}:${PORT}`);
+  console.log(`Water Bowl PWA running at http://${PUBLIC_HOST}:${PORT}`);
   console.log(`Reading HX711 on DT=GPIO${HX711_DATA_GPIO}, SCK=GPIO${HX711_CLOCK_GPIO}`);
   console.log(`Controlling valve with RELAYplate K${RELAYPLATE_RELAYS.join(" + K")}`);
   startScaleReader();
